@@ -1,6 +1,18 @@
+2017-02-18  David Freese  <iam_w1hkj@w1hkj.com>
+
+	dba12ce: alpha
+	836be40: New Log File
+	cede8a8: Russian UTF-8 translation
+	325d920: Tooltips
+	20fb591: n3fjp serial no
+
+2017-01-30  Jae Stutzman  <k5jae@stutzman.net>
+
+	8f005b6: Hamlib/RigCAT/XMLRPC Interface
 
 
 =Version 3.23.21=
+
 
 2017-01-23  David Freese  <iam_w1hkj@w1hkj.com>
 
