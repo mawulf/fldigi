@@ -59,7 +59,7 @@ using namespace std;
 void  clear_xmt_arrays();
 
 static int symlen = 4096; // nominal symbol length; 3 baud
-#define SQLFILT_SIZE 200
+#define SQLFILT_SIZE 64 //200
 #define NIT std::string::npos
 
 #define txcenterfreq  1500.0
@@ -999,7 +999,9 @@ void fsq::process_symbol(int sym)
 
 			if (b_bot) {
 				double val = snfilt->value();
-				for (int i = 0; i < SQLFILT_SIZE; i++) snfilt->run(val);
+				snfilt->reset();
+				snfilt->run(val);
+//				for (int i = 0; i < SQLFILT_SIZE; i++) snfilt->run(val);
 				ch_sqlch_open = true;
 				rx_text.clear();
 			}
@@ -1010,12 +1012,16 @@ void fsq::process_symbol(int sym)
 					display_fsq_mon_text( fsq_bot, FTextBase::CTRL);
 				if (b_eol) {
 					display_fsq_mon_text( fsq_eol, FTextBase::CTRL);
-					for (int i = 0; i < SQLFILT_SIZE; i++) snfilt->run(0);
+					snfilt->reset();
+					snfilt->run(0);
+//					for (int i = 0; i < SQLFILT_SIZE; i++) snfilt->run(0);
 					snprintf(szestimate, sizeof(szestimate), "%.0f db", s2n );
 				}
 				if (b_eot) {
 					snprintf(szestimate, sizeof(szestimate), "%.0f db", s2n );
-					for (int i = 0; i < SQLFILT_SIZE; i++) snfilt->run(0);
+					snfilt->reset();
+					snfilt->run(0);
+//					for (int i = 0; i < SQLFILT_SIZE; i++) snfilt->run(0);
 					display_fsq_mon_text( fsq_eot, FTextBase::CTRL);
 				}
 			}
@@ -1050,12 +1056,14 @@ void fsq::process_tones()
 	noise = 0;
 	max = 0;
 	peak = 0;
+
 // examine FFT bin contents over bandwidth +/- ~ 50 Hz
 // 8 * 12000 / 2048 = 46.875 Hz
 	int firstbin = basetone - 21;
 //	double K = 0.133333;
 //	if (progdefaults.fsq_fastavg) K *= 3.0;
 // time domain moving average filter for each tone bin
+
 	for (int i = 0; i < NUMBINS; ++i) {
 		val = norm(fft_data[i + firstbin]);
 		tones[i] = binfilt[i]->run(val);
@@ -1065,12 +1073,21 @@ void fsq::process_tones()
 		}
 	}
 
-	noise += (tones[0] + tones[NUMBINS - 1]) / 2.0;
-	noise *= FFTSIZE / 2.0;
+	noise = (tones[0] + tones[NUMBINS - 1]) / 2.0;
+
+	noise *= FFTSIZE / 4.0;
 
 	if (noise < 1e-8) noise = 1e-8;
 
-	s2n = 10 * log10(snfilt->run(tones[peak]/noise)) + 3.0;
+	double sn = tones[peak]/noise;
+	double sn1 = snfilt->run(sn);
+
+	s2n = 10 * log10(sn1);
+
+//if (sn1 > .1) {
+//	FILE *minmax = fopen("s2n.txt", "a");
+//	fprintf(minmax,"%f,%f, %f\n", sn, sn1);
+//}
 
 	metric = 2 * (s2n + 20);
 	metric = CLAMP(metric, 0, 100.0);  // -20 to +30 db range
